@@ -97,6 +97,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-s3-bucket-size | [S3 Bucket Size Metrics](#s3-bucket-size-metrics) | Approved for Development | Aggregate size/count from CloudWatch storage metrics; `size_observed_at` data-currency disclosure |
 | req-aws-collector-ecs | [ECS Clusters, Tasks And Container Images](#ecs-clusters-tasks-and-container-images) | Proposed | Collect ECS clusters, services, tasks and containers; per-container image and image digest as the join key to builds, SBOMs and findings; credential-bearing overrides declared, configuration off |
 | req-aws-collector-lb-topology | [Load Balancer Topology](#load-balancer-topology) | In Development | A load balancer reaches its targets through listener, rule and target group nodes, Classic ones included; each target edge carries its port and health; load balancer and Lambda targets are linked; Route 53 record sets become nodes between a zone and what they resolve to |
+| req-aws-collector-network-analyzer | [Network Analyzer Paths](#network-analyzer-paths) | In Development | A Network Access Analyzer finding is a node and the middle of a compound edge from its path's first component to its last; a Reachability Analyzer analysis that found a path is the middle of its own; the hops are path edges; a finding is dated by its analysis |
 | req-aws-collector-credentials | [Credential Resolution](#credential-resolution) | Approved for Development | `tap_cares` secret, `aws_static_access_key`, single account |
 | req-aws-collector-runtime | [Collector Runtime Integration](#collector-runtime-integration) | Approved for Development | `CollectorBase` pipeline; mirrors the KSI reference collector |
 | req-aws-collector-regions | [Region Iteration And Resilience](#region-iteration-and-resilience) | Approved for Development | Classify-and-skip; bounded throttle backoff |
@@ -375,7 +376,12 @@ it is engine-level, not a manifest transform:
   into a `datetime` (uniform regardless of wire format). The engine serializes
   every `datetime` to ISO 8601 UTC (`…Z`) when writing the `configuration` blob
   and GRIFT — a single mandatory rule (a `datetime` is not JSON-serializable),
-  not a per-field transform.
+  not a per-field transform. It covers a typed field mapped straight to a
+  `timestamp` member (a network analysis's `StartDate`, `req-aws-core-fields-11`)
+  as it covers the blob: one such value would make the batch invalid JSON and
+  reject it whole (aws-core-tap#213). Only a typed field's `datetime` or `date`
+  is rendered; any other value is sent as projected, so an object no field
+  should hold still fails the batch loudly.
 - The raw `configuration` blob otherwise keeps AWS's value verbatim, including
   the two known non-`timestamp` date shapes (epoch-millis `long` — CloudWatch
   Logs `creationTime`; offset-string — Lambda `LastModified`). The blob is for
@@ -1101,8 +1107,9 @@ not candidates until a later change adds footprint-to-cluster containment and a 
 **Read-only permissions added to the collector role:** `ecs:ListClusters`, `ecs:DescribeClusters`,
 `ecs:ListServices`, `ecs:DescribeServices`, `ecs:ListTasks`, `ecs:DescribeTasks`.
 
-**The image a container runs (`-20`..`-23`).** computing_core has decided where an image lives: "an image is a
-host with realm `oci-digest`", keyed by the image manifest digest, and "a running container points at its image
+**The image a container runs (`-20`..`-23`).** computing_core has decided where an image lives: an image is a
+host of host type `oci-digest` (the `tap.computing.host_type` dimension, one of the conventions computing_core's
+`key_dimensions.HOST_TYPES` names), keyed by the image manifest digest, and "a running container points at its image
 with `RUNS_IMAGE`, as an `aws_core` container does" (`spec-computing-core-v0.md`, `req-computing-core-host`). ECS
 reports that digest, so aws_core writes the link itself rather than leaving it to a scanner plugin: without it the
 container-to-image hop, which `fedramp_20x_vdr`'s reach walks from a vulnerable package to the container that runs
@@ -1113,7 +1120,7 @@ fence drops ([Declarative Edge Rules](#declarative-edge-rules)), and core never 
 the host is staged in the same batch.
 
 - For each container the batch carries whose `imageDigest` is `sha256:` and 64 lower-case hex characters (the only
-  shape computing_core accepts for the realm, `req-computing-core-host-4`), the run stages the
+  shape computing_core accepts for the host type, `req-computing-core-host-4`), the run stages the
   `computing_core__host` `(oci-digest, <digest>)` with `kind` `container`, and
   `<aws_ecs_container> RUNS_IMAGE__computing_core <host>` with the container's dimensions. Any other digest, or
   none, gives no host and no edge; the container is unchanged. `RUNS_IMAGE` gets no authority claim, so a
@@ -1213,13 +1220,13 @@ nothing joins them; the `-13` live trial should check it with an Inspector-scann
 | req-aws-collector-ecs-11 | Absence Is Not Deletion | Implemented | A task absent from both listings of a later run is not deleted or modified, and the collector adds no "currently running" flag of its own: a task's state is ECS's `lastStatus`, recorded when ECS lists it. | `req-aws-collector-scope-3`; retirement is aws-core-tap#211's falsifier and reconcile. |
 | req-aws-collector-ecs-12 | Read-Only Permissions | Implemented | The collector's permission list adds exactly the six `ecs:List*`/`ecs:Describe*` actions named above and no write action. | The repo's only action list is the trial policy's read section (`handoff/trial-provisioner-policy.json`); the cross-account handoff grants AWS-managed `SecurityAudit`, which already covers these reads. |
 | req-aws-collector-ecs-13 | Live Trial Before Release | Proposed | The change passes the `add-aws-type` trial run against a real cluster and Fargate task (or carries a named `deferred_reason`) and a collected container's digest is shown equal to the digest `DescribeTasks` returns for it. | Needs a human to approve what is provisioned. |
-| req-aws-collector-ecs-14 | Digest Join Not Made Here | Superseded | Was: this requirement adds no import of github_core or computing_core types and no digest-matching logic. Superseded by `-20`: computing_core has since decided the image's home (a host of realm `oci-digest`) and that a container points at it with `RUNS_IMAGE`, and VDR's reach needs the container-to-image hop, so aws_core writes it from ECS's own `imageDigest`. aws_core already depends on computing_core. Still true: no github_core type is named and no other plugin's module is imported. | Ruled by the maintainer 2026-11-20 (aws-core-tap#95, decision D2). |
+| req-aws-collector-ecs-14 | Digest Join Not Made Here | Superseded | Was: this requirement adds no import of github_core or computing_core types and no digest-matching logic. Superseded by `-20`: computing_core has since decided the image's home (a host of host type `oci-digest`) and that a container points at it with `RUNS_IMAGE`, and VDR's reach needs the container-to-image hop, so aws_core writes it from ECS's own `imageDigest`. aws_core already depends on computing_core. Still true: no github_core type is named and no other plugin's module is imported. | Ruled by the maintainer 2026-11-20 (aws-core-tap#95, decision D2). |
 | req-aws-collector-ecs-15 | Held Stopped Task Records Its Stop | Implemented | Each cluster is listed with `desiredStatus="STOPPED"`. A listed task the grid already holds is described and records `last_status`, `desired_status`, `stopped_at`, `stopped_reason` and `stop_code`; one the grid does not hold is neither described nor created. A grid read that fails, or finds two live rows for one ARN, records no stopped task and leaves a `stopped_tasks` gap on the cluster naming why. | Ruled 2026-11-09, aws-core-tap#211. A task listed under both filters is read as running. |
 | req-aws-collector-ecs-16 | Stopped Task Asserts No Edges | Implemented | A stopped task carries no `RUNS_TASK` source and its held containers no `RUNS_CONTAINER` source, and those edge reads are `partial`, so the run neither asserts nor claims absent the edges a running read would write. | Keeps the earlier `RUNS_TASK` edge, the containment a reconcile candidate is derived from once ECS stops listing the task (aws-core-tap#211). Not what makes it a candidate: a written task is observed (`req-grid-reconcile-candidates-1`). |
 | req-aws-collector-ecs-17 | Cluster And Task Contain | Implemented | `aws_ecs_cluster` declares `RUNS_TASK` and `aws_ecs_task` declares `RUNS_CONTAINER` in `CONTAINMENT_EDGES` (and `OUTBOUND_EDGES`); `aws_ecs_service` declares no containment. | aws-core-tap#211. A deleted cluster is not yet a candidate (no footprint containment). |
 | req-aws-collector-ecs-18 | A Surface Per Parent | Implemented | The walk records a surface for every cluster's running-task listing and every described task's containers; a denied, failed or short listing is recorded incomplete with its reason, never omitted, and a cluster running nothing is complete-empty. A stopped task whose container could not be looked up on the grid records its container surface incomplete (`grid_lookup_failed`), so an omitted container never reads as absent. The stopped-task listing records no surface. | `req-aws-core-contained-type-triple-1`..`-3`. |
 | req-aws-collector-ecs-19 | Task And Container Falsifiers | Implemented | `EcsTaskFalsifier` and `EcsContainerFalsifier` are registered in `[falsifiers]` and pass core's four proof cases. They probe `DescribeTasks` at most 100 ARNs a call per region and cluster; `MISSING` is gone, `STOPPED` is gone only once the row already records `STOPPED` (otherwise undetermined), an error is undetermined, and an ARN that names no cluster, or whose own account is not the credential's (whatever the row's `aws_account` dimension says), is not probed. | Reconcile authority stays off by default. Ruled 2026-11-09: a stopped task retires. |
-| req-aws-collector-ecs-20 | Container Runs Its Image | Implemented | Each container the batch carries whose `imageDigest` is a well-formed `sha256:` digest has `RUNS_IMAGE__computing_core` to the `computing_core__host` `(oci-digest, <digest>)`, kind `container`, staged in the same batch; a container with no digest, or one computing_core refuses, has neither, and no `RUNS_IMAGE` authority claim is made. `ecs.py` names no github_core type and imports exactly one module from another plugin: computing_core's dependency-free `image_reference.canonical_repository` (aws_core depends on computing_core; `-22`), so it can key two spellings of one image on one batch ref. | aws-core-tap#95 (c). Supersedes `-14`. `tests/test_ecs_images.py` |
+| req-aws-collector-ecs-20 | Container Runs Its Image | Implemented | Each container the batch carries whose `imageDigest` is a well-formed `sha256:` digest has `RUNS_IMAGE__computing_core` to the `computing_core__host` `(oci-digest, <digest>)`, kind `container`, staged in the same batch; a container with no digest, or one computing_core refuses, has neither, and no `RUNS_IMAGE` authority claim is made. The host type `oci-digest` is the envelope's `tap.computing.host_type` dimension, never a payload field, and every key naming the host spells it `{"dimension:tap.computing.host_type": "oci-digest", "stable_id": <digest>}` (computing_core's `key_dimensions.HOST_TYPE_ENTRY`). `ecs.py` names no github_core type and imports two modules from another plugin, both dependency-free: computing_core's `image_reference.canonical_repository` (aws_core depends on computing_core; `-22`), so it can key two spellings of one image on one batch ref, and its `key_dimensions`, which names the host type dimension and its key entry. | aws-core-tap#95 (c). Supersedes `-14`. Host type moved from computing_core's retired `realm` column to the dimension 2026-11-24 (unified-systems-com/tap#1355). `tests/test_ecs_images.py` |
 | req-aws-collector-ecs-21 | Image Host Written Without Overwriting | Implemented | A host the grid does not hold carries `name`, the container's image reference; one it holds is sent with its key and `kind` only and no envelope name, so a name, operating system or image fact another producer wrote is kept. A failed lookup sends the key-and-kind write and records `ECS_IMAGE_HOST_LOOKUP_FAILED`; a defect in the image shaping keeps the containers, writes no image, and is an `ECS_IMAGE_WRITES_FAILED` error entry named in the summary. Both image types are declared in `reader_sensitivity.json` and are not written without a safe declaration. | Ruled 2026-11-20 (aws-core-tap#95). |
 | req-aws-collector-ecs-22 | Image Tag ECS Resolved | Implemented | Where the container's `image` writes a tag (no implied `latest`, no digest reference) and the digest is well-formed, with its parts sent as written (`registry` `""` for a reference that names no host, which computing_core 0.10.9 stores as Docker Hub's canonical `docker.io` / `library/...`) and one node per canonical tag, the run stages `computing_core__image_tag` and `TAGS_IMAGE__computing_core` to the image host, with `detected_at` the latest `startedAt` of the tasks that ran the pair, absent when none has started. | aws-core-tap#95 (f). |
 | req-aws-collector-ecs-23 | Digest Kept On The Container | Implemented | `aws_ecs_container.image_digest` stays, verbatim and null when unreported, beside the image host's `stable_id`; the two sites carry `TAP-KNOWN-DUPE(ecs-image-digest)`. | Decision D9. |
@@ -1306,6 +1313,72 @@ edges are replaced the same way the load balancers' are.
 | req-aws-collector-lb-topology-7 | Live Trial | Proposed | A staging seed wave with an Application Load Balancer that has host and path rules and a weighted forward, a Network Load Balancer in front of it, instance and Lambda targets, and a private hosted zone with alias, CNAME and weighted records is collected, and each edge above is found on the grid. | |
 | req-aws-collector-lb-topology-8 | Classic Targets With Health | Implemented | A Classic load balancer has `ROUTES_TO_TARGET` to each registered instance, one per instance port its listeners forward to, carrying `health_state`, `health_reason` and `health_description` from `DescribeInstanceHealth` and `availability_zone` null. A health read that fails leaves the health null and the routes read: the instances come from the load balancer's own listing. | `tests/test_elb_collection.py::TestClassicRoutes` |
 | req-aws-collector-lb-topology-9 | Classic Listeners As Nodes | Implemented | Each `ListenerDescriptions` entry of a Classic load balancer is an `aws_elb_classic_listener` node keyed `<partition>:<account>:<region>:<load balancer name>:<protocol>:<port>`, with its instance protocol and port, policies and certificate ARN, `LISTENS_ON_LOAD_BALANCER` to the load balancer and `PRESENTS_CERTIFICATE` to an ACM certificate. The account comes from `sts:GetCallerIdentity`; a run that cannot read it raises rather than key a listener without it. | `tests/test_elb_listener_topology.py::TestClassicListeners` |
+
+### Network Analyzer Paths
+----
+RID: `req-aws-collector-network-analyzer`
+
+Status: `In Development`
+
+VPC Network Access Analyzer and Reachability Analyzer each say a network path exists from one resource to another,
+through others. That is a sender, a thing in the middle with an identity of its own, and a receiver, so each is a
+compound edge (`req-grid-edge-compound`), used exactly as core ships it and following the first one, the Inspector
+reachability finding (`req-aws-landing-zone-inspector-reachability`). A consumer can then tell which resource a path
+reaches, and when AWS observed it, from typed edges and fields instead of parsing stored responses
+(aws-core-tap#248). Rendering is core's: the middle node and its role edges are drawn as one arrow.
+
+**Network Access Analyzer findings** (aws-core-tap#212, ruled by George on 2026-11-09: a finding is its own node
+type). For each access scope analysis that succeeded and does not say it found nothing (`FindingsFound` `false`),
+`GetNetworkInsightsAccessScopeAnalysisFindings` is read to its end, and every finding is an
+`aws_ec2_network_access_scope_finding` node. A finding has no ARN and AWS addresses it only through its analysis, so
+it is keyed natively by `(analysis_arn, finding_id)`, both as AWS returns them; the analysis ARN carries partition,
+account and region (`req-aws-collector-identity-8`, `-13`). Its analysis has
+`REPORTS_ACCESS_SCOPE_FINDING` to it. The finding is the middle node: `ACCESS_SCOPE_FINDING_SOURCE` from the first
+component of its `FindingComponents`, `ACCESS_SCOPE_FINDING_DESTINATION` to the last, and `TRAVERSES_COMPONENT`, with
+`step`, to each component between them. AWS gives a finding no time of its own, so it carries its analysis's
+`StartDate` and `EndDate` as `analysis_start_date` and `analysis_end_date`, and declares them as its event time, an
+interval of kind `occurred`, as the analysis does. The typed fields also name the first and last components as AWS
+sent them (`source_component_id` and `_arn`, `destination_component_id` and `_arn`), so the resource a path reaches
+is stated even when no node matches it. The whole finding is stored.
+
+**Reachability Analyzer analyses.** An `aws_ec2_network_insights_analysis` is itself the middle node, as the
+Inspector finding is: it has its own identity (its ARN) and time (`StartDate`), and when AWS found a path a sender,
+a receiver and the hops between them. A separate path node would carry no fact the analysis does not, under an
+identity borrowed from it. When the analysis succeeded and `NetworkPathFound` is true, `REACHABILITY_ANALYSIS_SOURCE`
+runs from the first component of its `ForwardPathComponents`, `REACHABILITY_ANALYSIS_DESTINATION` to the last, and
+`TRAVERSES_COMPONENT`, with `step`, to each one between. An analysis that found no path, or has not finished, has no
+role edges. The analysis's typed fields and `StartDate` event time are aws-core-tap#248's other half (PR 297).
+
+**Ends and hops.** A path's components are put in `SequenceNumber` order; AWS documents neither that order nor that
+the first and last components are its ends, so both are inferences to check on a live finding (-7). A component's
+type is read from its `Component.Id`'s resource-id prefix or from its `Component.Arn` (`arn_resolver`), never from its
+position. Each role accepts only the types the service's own guide lists for it: for Network Access Analyzer, the
+types a finding's path can start or end at (internet gateway, network interface, transit gateway attachment, VPC
+endpoint, endpoint service, peering connection, virtual private gateway) and the types it lists as path resources;
+for Reachability Analyzer, the types it lists as sources and destinations and as path components. A component that
+matches no tabled type, or a type its role does not accept, gets no edge and is listed in `unmatched_components`
+with the reason (on the finding as a field, on the analysis in its stored response).
+
+**Retirement.** Both middle nodes declare `retires_with: ("source", "destination")`: deleting either end retires
+the finding or the analysis; deleting a hop ends that edge only. Neither type, nor the analyses and scopes around
+them, has a containment surface or a falsifier yet, so a finding is not retired because a later run no longer lists
+it.
+
+**The engine.** Two `custom_fn` readers (`collectors/boto3_collector/network_insights.py`) shape each item into one
+slot per role and target type (`_source_<type>`, `_destination_<type>`, `_hops_<type>`), each always present and read
+`complete` (a running or failed analysis's slots read `partial`), and the manifest declares one edge rule per slot.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-network-analyzer-1 | One Node Per Finding | Implemented | Every finding `GetNetworkInsightsAccessScopeAnalysisFindings` returns, read to its end, for an analysis whose `Status` is `succeeded` and whose `FindingsFound` is not `false`, is one `aws_ec2_network_access_scope_finding` node keyed `(analysis_arn, finding_id)`, with `REPORTS_ACCESS_SCOPE_FINDING` from its analysis. A running or failed analysis, or one that found nothing, is not asked. | `tests/test_network_insights.py::TestAccessScopeReader` |
+| req-aws-collector-network-analyzer-2 | A Cut Read Is A Gap | Implemented | An analysis whose findings could not all be read contributes none of them; the reader yields the rest and raises once, so the entry is reported skipped, never a quietly shorter list. | `TestAccessScopeReader` |
+| req-aws-collector-network-analyzer-3 | The Finding Is The Middle Node | Implemented | `aws_ec2_network_access_scope_finding` and `aws_ec2_network_insights_analysis` declare `COMPOUND_EDGE` with their own `<KIND>_SOURCE` and `<KIND>_DESTINATION`, `TRAVERSES_COMPONENT` for the path and `retires_with` both ends; `parse_compound_edge` accepts both and every role edge reaches its middle node. Deleting either end retires the finding or the analysis; deleting a hop does not, and a later batch that does not list an end retires nothing. | `TestDeclarations`, `test_a_finding_retires_with_either_end_and_not_with_a_hop`, `test_a_reachability_analysis_retires_with_either_end_and_not_with_a_hop`, `test_an_end_a_later_batch_does_not_list_retires_nothing` |
+| req-aws-collector-network-analyzer-4 | Ends And Hops From The Components | Implemented | In `SequenceNumber` order, the first component is the source and the last the destination, each with a role edge when its type is one the service lists as an end; every component between with a type the service lists for paths has `TRAVERSES_COMPONENT` with its 0-based `step`; any other component is listed in `unmatched_components` with the reason and gets no edge. A Reachability Analyzer analysis has role edges only when it succeeded and `NetworkPathFound` is true. | `TestReadPath`, `TestThroughTheEngine` |
+| req-aws-collector-network-analyzer-5 | Which Resource, And When | Implemented | A finding carries its analysis's `StartDate` and `EndDate` as `analysis_start_date` and `analysis_end_date`, declared as its event time (an interval of kind `occurred`), and the first and last components' ids and ARNs as AWS sent them. | `tests/test_event_time.py`, `TestThroughTheEngine` |
+| req-aws-collector-network-analyzer-6 | The Manifest Holds To The Tables | Implemented | The manifest declares exactly one edge rule per slot of each kind, of the types the role tables list, and each role edge's definition lists exactly those types. | `TestManifestRules` |
+| req-aws-collector-network-analyzer-7 | Live Trial | Proposed | On an account with one succeeded access scope analysis with at least one finding and one Reachability Analyzer analysis that found a path, a run lands each as specified; the first and last components are the path's ends and `SequenceNumber` orders them; an account with neither lands nothing and raises no gap. | Analyses are writes: the seeder identity creates them, never the collector. |
 
 ### Credential Resolution
 ----
@@ -1730,6 +1803,12 @@ first is a failure:
 - **`throttled`** — the service rate-limited past the client's retries. A distinct `ENTRY_THROTTLED`
   warning; never read as empty.
 
+A per-resource read (a hydrate slot) has one named result of its own: **`absent`** — a reviewed row says the error
+is AWS answering that the resource has no such configuration, under a code the hydrate template's
+`NoSuch*` / `*NotFound*` rule does not recognise (`lambda:GetPolicy`'s `ResourceNotFoundException` for a function,
+alias or version with no policy, aws-core-tap#290). The slot is recorded `absent`, a fact, never `error`, and raises
+no `HYDRATE_GAP`. It never names a listing's result.
+
 #### Implementation
 
 - **Data, not code, not a broad catch.** `error_outcomes.json` (schema `error_outcomes.schema.json`,
@@ -1766,6 +1845,7 @@ first is a failure:
 | req-aws-collector-outcome-4 | Throttling Is Named | Approved for Development | A throttling error that outlasts the client's retries is `throttled`: an `ENTRY_THROTTLED` warning and an incomplete surface, never an empty one. | `::TestCollectorRun::test_a_throttled_listing_is_a_named_warning_and_not_an_empty_one` |
 | req-aws-collector-outcome-5 | Unreachable Learned Once | Approved for Development | An unreachable endpoint (outside commercial) is recorded `unsupported_in_partition` and the service's remaining entries in that region are settled without a call. | `::TestCollectorRun::test_an_unreachable_service_is_learned_once_not_once_per_entry` |
 | req-aws-collector-outcome-6 | One Client Config | Approved for Development | Every collection client has an explicit connect timeout, read timeout and finite adaptive retry budget from `credentials.client_config`; no module builds its own retry `Config`. | `::TestClientConfig` |
+| req-aws-collector-outcome-7 | Absent Hydrate Read Is Data | Approved for Development | A hydrate read whose error a row with outcome `absent` matches (service, operation, error code; the row must name all three) is recorded `absent` through `hydrate_item`'s `reclassify` hook (`outcomes.classify_hydrate_read`), and `classify` never returns such a row for a listing. A refusal stays `denied`. | `tests/test_lambda_resource_policy.py::TestOutcomeRow` |
 
 ### GRIFT Batch Assembly
 ----

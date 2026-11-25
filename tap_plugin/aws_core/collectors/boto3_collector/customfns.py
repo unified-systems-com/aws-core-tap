@@ -38,9 +38,10 @@ from .route53_records import shared_walk as shared_records_walk
 from .envelope import jsonable, without_response_metadata
 from .hydrate import hydrate_item
 from . import iam_credentials
-from .iam_trust import account_of_iam_arn, summarize_trust_policy
+from .iam_trust import account_of_arn, account_of_iam_arn, summarize_resource_policy, summarize_trust_policy
 from .listing import ListingWalk, error_code, page_says_more
 from .manifest import manifest_entries
+from .outcomes import classify_hydrate_read
 from .partition import (
     PARTITION_AWS,
     PARTITION_RE,
@@ -2025,6 +2026,161 @@ def lambda_event_source_mappings_described(session: Any, *, client_for: Any) -> 
                 yield {**mapping, "_arn": arn}
 
 
+LAMBDA_FUNCTION = "aws_core__aws_lambda"
+LAMBDA_ALIAS = "aws_core__aws_lambda_alias"
+LAMBDA_FUNCTION_VERSION = "aws_core__aws_lambda_function_version"
+#: The unpublished version ``ListFunctions(FunctionVersion=ALL)`` lists beside the published ones. Lambda keeps no
+#: policy of its own on it ("Lambda does not support adding policies to version $LATEST", botocore AddPermission).
+LAMBDA_UNPUBLISHED_VERSION = "$LATEST"
+#: The envelope key the resource-policy edge rule (``PERMITS_ACCOUNT``) reads.
+POLICY_ACCOUNTS_KEY = "_resource_policy_account_ids"
+_NO_POLICY: dict[str, Any] = {"account_ids": [], "services": [], "wildcard_principal": False, "unconditioned": False}
+
+
+def _manifest_entry(entity_type: str) -> dict[str, Any]:
+    return next(entry for entry in manifest_entries() if entry["entity_type"] == entity_type)
+
+
+def _listed_field_reads(entry: dict[str, Any]) -> dict[str, str]:
+    """``complete`` for each listed-item key an entry's edge rules read: the item is the list call's own record of
+    the resource, read exactly as an ``aws_op`` entry's item is (the engine's field-presence check still applies)."""
+    return {
+        rule["value_path"].split(".")[0].removesuffix("[]"): COMPLETE
+        for rule in entry.get("edges", [])
+        if not rule["value_path"].startswith("_")
+    }
+
+
+def _resource_policy_summary(slot: dict[str, Any] | None, *, own_account: str | None) -> tuple[dict[str, Any] | None, str]:
+    """The policy summary from a ``GetPolicy`` hydrate slot, and how ``PERMITS_ACCOUNT``'s source was read.
+
+    ``ok`` -> the summary of the document (``partial`` and no summary when it cannot be read with certainty);
+    ``absent`` (no policy, ``error_outcomes.json``) -> no grant to anyone, ``complete``; ``denied`` / ``error`` / no
+    slot -> no summary, ``failed``: an unread policy is never "no policy".
+    """
+    status = (slot or {}).get("status")
+    if status == "absent":
+        return dict(_NO_POLICY), COMPLETE
+    if status != "ok":
+        return None, FAILED
+    summary = summarize_resource_policy(((slot or {}).get("data") or {}).get("Policy"), own_account=own_account)
+    return summary, (COMPLETE if summary is not None else PARTIAL)
+
+
+def _policy_fields(summary: dict[str, Any] | None) -> dict[str, Any]:
+    """The ``_``-prefixed siblings the manifest's ``fields`` map projects; every one is ``None`` when not read."""
+    return {
+        POLICY_ACCOUNTS_KEY: None if summary is None else summary["account_ids"],
+        "_resource_policy_services": None if summary is None else summary["services"],
+        "_resource_policy_wildcard_principal": None if summary is None else summary["wildcard_principal"],
+        "_resource_policy_unconditioned": None if summary is None else summary["unconditioned"],
+    }
+
+
+def _with_resource_policy(
+    client: Any, item: dict[str, Any], entry: dict[str, Any], *, function_name: str, qualifier: str | None, arn: Any
+) -> dict[str, Any]:
+    """``item`` with its ``GetPolicy`` slot (the manifest's ``hydrate`` list), the policy summary and its edge reads.
+
+    ``qualifier`` names the alias or published version whose own policy is read; ``None`` reads the function's.
+    ``ResourceNotFoundException`` is reclassified ``absent`` by its reviewed outcome row, never by code here.
+    """
+    call_kwargs: dict[str, Any] = {"FunctionName": function_name}
+    if qualifier:
+        call_kwargs["Qualifier"] = qualifier
+    envelope = hydrate_item(
+        client,
+        item,
+        entry.get("hydrate", []),
+        call_kwargs=call_kwargs,
+        reclassify=lambda exc: outcome.kind if (outcome := classify_hydrate_read(entry, exc)) else None,
+    )
+    summary, read = _resource_policy_summary(envelope["_hydrate"].get("policy"), own_account=account_of_arn(arn))
+    envelope.update(_policy_fields(summary))
+    return with_edge_reads(envelope, {**_listed_field_reads(entry), POLICY_ACCOUNTS_KEY: read})
+
+
+def _without_resource_policy(item: dict[str, Any], entry: dict[str, Any], read: str) -> dict[str, Any]:
+    """``item`` with no policy read made: every summary field ``None`` (not read), the edge source ``read``."""
+    return with_edge_reads({**item, **_policy_fields(None)}, {**_listed_field_reads(entry), POLICY_ACCOUNTS_KEY: read})
+
+
+def lambda_functions_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Lambda functions (regional) with ``ListFunctions`` and read each function's resource-based policy
+    (``GetPolicy``, unqualified) into the manifest's ``policy`` hydrate slot (aws-core-tap#290).
+
+    The item is ``ListFunctions``' own, as it was when the entry was a plain ``aws_op``; the policy is stored raw
+    in the slot and summarised (:func:`.iam_trust.summarize_resource_policy`) into the typed fields and the
+    ``PERMITS_ACCOUNT`` edge source. A function with no policy reads as no grant; one whose policy could not be
+    read reads as not observed (``None``), never as no grant.
+    """
+    client = client_for("lambda")
+    entry = _manifest_entry(LAMBDA_FUNCTION)
+    for page in _pages(client, "list_functions"):
+        for function in page.get("Functions", []):
+            name = function.get("FunctionName")
+            if not name:
+                yield _without_resource_policy(function, entry, FAILED)
+                continue
+            yield _with_resource_policy(
+                client, function, entry, function_name=str(name), qualifier=None, arn=function.get("FunctionArn")
+            )
+
+
+def lambda_function_versions_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Lambda function versions (regional) with ``ListFunctions(FunctionVersion=ALL)`` and read each
+    published version's own resource-based policy (``GetPolicy`` with ``Qualifier=<version>``).
+
+    The unpublished ``$LATEST`` entry ``ListFunctions`` also returns is listed as before, but no policy read is made
+    for it: Lambda does not attach a policy to ``$LATEST``, so its summary fields stay ``None`` (not read) and the
+    ``PERMITS_ACCOUNT`` read is ``partial``, rather than a "no policy" this reader did not ask AWS for.
+    """
+    client = client_for("lambda")
+    entry = _manifest_entry(LAMBDA_FUNCTION_VERSION)
+    for page in _pages(client, "list_functions", FunctionVersion="ALL"):
+        for version in page.get("Functions", []):
+            name, qualifier = version.get("FunctionName"), version.get("Version")
+            if qualifier == LAMBDA_UNPUBLISHED_VERSION:
+                yield _without_resource_policy(version, entry, PARTIAL)
+            elif not name or not qualifier:
+                yield _without_resource_policy(version, entry, FAILED)
+            else:
+                yield _with_resource_policy(
+                    client, version, entry, function_name=str(name), qualifier=str(qualifier), arn=version.get("FunctionArn")
+                )
+
+
+def lambda_aliases_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Lambda aliases (regional): ``ListAliases`` for each function ``ListFunctions`` names, and each
+    alias's own resource-based policy (``GetPolicy`` with ``Qualifier=<alias name>``).
+
+    A function whose aliases cannot be listed is a gap (:func:`_undescribed`): the aliases of every other function
+    are kept, and the entry is reported as not fully read.
+    """
+    client = client_for("lambda")
+    entry = _manifest_entry(LAMBDA_ALIAS)
+    failed: list[str] = []
+    for page in _pages(client, "list_functions"):
+        for function in page.get("Functions", []):
+            name = function.get("FunctionName")
+            if not name:
+                continue
+            try:
+                aliases = [a for listed in _pages(client, "list_aliases", FunctionName=name) for a in listed.get("Aliases", [])]
+            except BotoCoreError, ClientError:
+                failed.append(str(name))
+                continue
+            for alias in aliases:
+                if alias.get("Name"):
+                    yield _with_resource_policy(
+                        client, alias, entry, function_name=str(name), qualifier=str(alias["Name"]), arn=alias.get("AliasArn")
+                    )
+                else:
+                    yield _without_resource_policy(alias, entry, FAILED)
+    if failed:
+        raise _undescribed("Lambda functions whose aliases", failed)
+
+
 def _account_id(client_for: Any) -> str:
     """The calling account's id (``sts:GetCallerIdentity``), for ARNs and keys the service does not return."""
     return str(without_response_metadata(client_for("sts").get_caller_identity()).get("Account") or "")
@@ -3585,6 +3741,9 @@ _CUSTOM_FNS = {
     "eventbridge_archives_described": eventbridge_archives_described,
     "eventbridge_connections_described": eventbridge_connections_described,
     "eventbridge_api_destinations_described": eventbridge_api_destinations_described,
+    "lambda_functions_described": lambda_functions_described,
+    "lambda_function_versions_described": lambda_function_versions_described,
+    "lambda_aliases_described": lambda_aliases_described,
     "lambda_function_urls_described": lambda_function_urls_described,
     "lambda_layer_versions_described": lambda_layer_versions_described,
     "lambda_code_signing_configs_described": lambda_code_signing_configs_described,
@@ -3642,8 +3801,9 @@ def build_custom_fn_registry() -> CustomFnRegistry:
     classifies-and-skips rather than crashing the run.
     """
     from .customfns_longtail import LONGTAIL_FNS  # imported here: that module imports helpers from this one
+    from .network_insights import NETWORK_INSIGHTS_FNS  # likewise
 
     registry = CustomFnRegistry()
-    for name, fn in {**_CUSTOM_FNS, **LONGTAIL_FNS}.items():
+    for name, fn in {**_CUSTOM_FNS, **LONGTAIL_FNS, **NETWORK_INSIGHTS_FNS}.items():
         registry.register(name, fn)
     return registry

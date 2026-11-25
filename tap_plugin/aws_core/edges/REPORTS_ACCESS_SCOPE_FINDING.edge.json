@@ -1,0 +1,17 @@
+{
+  "slug": "REPORTS_ACCESS_SCOPE_FINDING__aws_core",
+  "name": "Reports Access Scope Finding",
+  "description": "A VPC Network Access Analyzer access scope analysis reports one of its findings (analysis -> finding): each finding GetNetworkInsightsAccessScopeAnalysisFindings returns for a succeeded analysis, read to its end. A reference, not containment: neither the analysis nor its findings have a retirement path yet. Collected by collectors/boto3_collector/network_insights.py (aws-core-tap#212, #248).",
+  "sources": [
+    "aws_core__aws_ec2_network_insights_access_scope_analysis"
+  ],
+  "targets": [
+    "aws_core__aws_ec2_network_access_scope_finding"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

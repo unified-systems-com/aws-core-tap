@@ -1,0 +1,25 @@
+{
+  "slug": "REACHABILITY_ANALYSIS_DESTINATION__aws_core",
+  "name": "Reachability Analysis Destination",
+  "description": "The destination role of the Reachability Analyzer compound edge (req-grid-edge-compound): an analysis, the middle node -> the last component of its ForwardPathComponents, in SequenceNumber order: the resource the path reaches. Written only when the analysis succeeded and found a path (NetworkPathFound). The analysis retires with this end (COMPOUND_EDGE retires_with). Collected by collectors/boto3_collector/network_insights.py (aws-core-tap#212, #248).",
+  "sources": [
+    "aws_core__aws_ec2_network_insights_analysis"
+  ],
+  "targets": [
+    "aws_core__aws_ec2_instance",
+    "aws_core__aws_internet_gateway",
+    "aws_core__aws_ec2_network_interface",
+    "aws_core__aws_transit_gateway",
+    "aws_core__aws_transit_gateway_attachment",
+    "aws_core__aws_ec2_vpn_gateway",
+    "aws_core__aws_vpc_endpoint_service",
+    "aws_core__aws_vpc_endpoint",
+    "aws_core__aws_ec2_vpc_peering_connection"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

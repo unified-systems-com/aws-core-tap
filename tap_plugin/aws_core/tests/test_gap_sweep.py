@@ -245,7 +245,11 @@ def test_every_nullable_column_accepts_null_in_both_of_its_schemas():
         if model._meta.model_name.startswith("historical") or not hasattr(model, "FIELD_CRUD_SCHEMA"):
             continue
         for column in model._meta.concrete_fields:
-            if not column.null or column.name in ("tags", "configuration"):
+            # A non-editable column is not written through the service, so it has no schema to accept null: core's
+            # spine copy spine_deleted_at (tap PR 1352) is kept by a database trigger, and a schema entry would
+            # advertise it as writable. Plugin field sweeps exclude non-editable fields (core ruling, hard-things,
+            # 2026-11-24, unified-systems-com/tap#1284).
+            if not column.editable or not column.null or column.name in ("tags", "configuration"):
                 continue
             schemas = {
                 "crud": model.FIELD_CRUD_SCHEMA.get(column.name),

@@ -148,3 +148,47 @@ def test_certificate_not_after_is_a_reader_core_accepts() -> None:
         datetime(2030, 1, 2, 3, 4, 5, tzinfo=UTC),
         (),
     )
+
+
+# --- either_created_date: an API Gateway stage's configuration, under either service's spelling -------------------
+
+
+@pytest.mark.parametrize(
+    "configuration",
+    [
+        # REST (apigateway GetStages item[]): createdDate, stored as the envelope renders a botocore timestamp.
+        {"stageName": "prod", "createdDate": "2026-03-04T05:06:07Z", "_api_kind": "rest"},
+        # HTTP and WebSocket (apigatewayv2 GetStages Items[]): CreatedDate.
+        {"StageName": "prod", "CreatedDate": "2026-03-04T05:06:07Z", "_api_kind": "http"},
+        # Both, agreeing: no service sends both, and the one value is read.
+        {"createdDate": "2026-03-04T05:06:07Z", "CreatedDate": "2026-03-04T05:06:07Z"},
+    ],
+)
+def test_either_created_date_returns_whichever_spelling_is_present(configuration: dict[str, Any]) -> None:
+    assert times.either_created_date(configuration) == "2026-03-04T05:06:07Z"
+
+
+@pytest.mark.parametrize("configuration", [{}, {"stageName": "prod"}, {"createdDate": None}, {"CreatedDate": ""}])
+def test_either_created_date_is_none_when_neither_is_present(configuration: dict[str, Any]) -> None:
+    assert times.either_created_date(configuration) is None
+
+
+def test_either_created_date_picks_neither_of_two_different_values() -> None:
+    with pytest.raises(ValueError):
+        times.either_created_date({"createdDate": "2026-03-04T05:06:07Z", "CreatedDate": "2025-01-01T00:00:00Z"})
+
+
+@pytest.mark.parametrize("stored", ["2026-03-04T05:06:07Z", ["createdDate"], 1767225600])
+def test_either_created_date_raises_on_anything_not_a_dict(stored: Any) -> None:
+    with pytest.raises(TypeError):
+        times.either_created_date(stored)
+
+
+def test_either_created_date_is_a_reader_core_accepts_by_function_and_by_path() -> None:
+    by_path = event_time.Interval(
+        start="configuration", kind="created", reader="tap_plugin.aws_core.times:either_created_date"
+    )
+    assert event_time.resolve_reader(by_path.reader) is times.either_created_date
+    derived = event_time.derive(by_path, {"configuration": {"CreatedDate": "2026-03-04T05:06:07Z"}}.get)
+    assert (derived.event_start, derived.event_end) == (datetime(2026, 3, 4, 5, 6, 7, tzinfo=UTC), None)
+

@@ -27,6 +27,7 @@ FORMATS = json.loads(iam_policy.ARN_FORMATS.read_text())["resources"]
 #: A resource type with no ARN of its own: the model declares no ARN_RESOURCE and keeps its scoped key.
 NO_ARN: dict[str, str] = {
     "access_analyzer_finding": "the service reference defines no ARN for an Access Analyzer finding",
+    "ec2_network_access_scope_finding": "AWS returns no ARN for a Network Access Analyzer finding and the service reference defines none",
     "account_region": "an account's footprint in one Region, which the collector records; not an AWS resource",
     "appstream_directory_config": "the service reference defines no ARN for a directory config",
     "appstream_entitlement": "the service reference defines no ARN for an entitlement",

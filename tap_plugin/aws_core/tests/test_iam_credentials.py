@@ -39,7 +39,7 @@ from tap_plugin.aws_core.falsifiers import (
     IamSigningCertificateFalsifier,
     IamSshPublicKeyFalsifier,
 )
-from tap_plugin.aws_core.tests.grid_dimensions import declare_credential_dimension, stamp_dimensions
+from tap_plugin.aws_core.tests.grid_dimensions import stamp_dimensions
 from tap_plugin.aws_core.tests.test_trial_run_live import _create_verb_schema, _prepare_null_payload
 
 from tap_grid.falsifiers import DROPPED_FROM_OBSERVATION, PRESENT_AT_PROBE, UNDETERMINED, Candidate, FalsifyContext
@@ -766,12 +766,6 @@ def _judge(falsifier_cls: type, client: Any, candidate: Candidate, *, account: s
 @pytest.mark.django_db
 @pytest.mark.spec("req-aws-core-iam-credentials-4")
 class TestFalsifiers:
-    @pytest.fixture(autouse=True)
-    def _credential_dimension(self) -> None:
-        # The four types write computing_core's tap.computing.credential (ruling Q146); seeded here until a
-        # computing_core release declares it.
-        declare_credential_dimension()
-
     @pytest.mark.parametrize("case", _FALSIFIERS, ids=lambda c: c[0])
     def test_present_dropped_and_forbidden(self, case: tuple[Any, ...]) -> None:
         entity_type, cls, id_field, credential_id, method, items_key, id_member = case

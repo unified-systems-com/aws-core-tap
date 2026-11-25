@@ -263,6 +263,7 @@ from tap_plugin.aws_core.models.ec2_local_gateway_route_table import Ec2LocalGat
 from tap_plugin.aws_core.models.ec2_local_gateway_route_table_vpc_association import Ec2LocalGatewayRouteTableVpcAssociation
 from tap_plugin.aws_core.models.ec2_local_gateway_virtual_interface import Ec2LocalGatewayVirtualInterface
 from tap_plugin.aws_core.models.ec2_local_gateway_virtual_interface_group import Ec2LocalGatewayVirtualInterfaceGroup
+from tap_plugin.aws_core.models.ec2_network_access_scope_finding import Ec2NetworkAccessScopeFinding
 from tap_plugin.aws_core.models.ec2_network_insights_access_scope import Ec2NetworkInsightsAccessScope
 from tap_plugin.aws_core.models.ec2_network_insights_access_scope_analysis import Ec2NetworkInsightsAccessScopeAnalysis
 from tap_plugin.aws_core.models.ec2_network_insights_analysis import Ec2NetworkInsightsAnalysis
@@ -1263,6 +1264,7 @@ __all__ = [
     "Ec2LocalGatewayRouteTableVpcAssociation",
     "Ec2LocalGatewayVirtualInterface",
     "Ec2LocalGatewayVirtualInterfaceGroup",
+    "Ec2NetworkAccessScopeFinding",
     "Ec2NetworkInsightsAccessScope",
     "Ec2NetworkInsightsAccessScopeAnalysis",
     "Ec2NetworkInsightsAnalysis",

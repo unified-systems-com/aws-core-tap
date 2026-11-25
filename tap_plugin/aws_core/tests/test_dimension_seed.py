@@ -215,9 +215,11 @@ def test_the_migration_renames_aws_core_rows_only_and_is_idempotent() -> None:
     with connection.cursor() as cursor:
         for edge, edge_type in ((our_edge, "HOSTS_VPC__aws_core"), (their_edge, "SCANS__anchore")):
             cursor.execute(
-                "INSERT INTO tap_edge (batch_id, flip_map, edge_type, properties, entity_id, from_entity_id, to_entity_id)"
-                " VALUES (%s, '{}', %s, '{}', %s, %s, %s)",
-                ["test", edge_type, edge.pk, ours.pk, theirs.pk],
+                # No batch_id: core's spine version 2 removed the typed row's batch column (tap PR 1352); the
+                # batch that last changed a row is the spine's last_changed_batch_id.
+                "INSERT INTO tap_edge (flip_map, edge_type, properties, entity_id, from_entity_id, to_entity_id)"
+                " VALUES ('{}', %s, '{}', %s, %s, %s)",
+                [edge_type, edge.pk, ours.pk, theirs.pk],
             )
     for _ in range(2):
         migration.rename_dimensions(None, SimpleNamespace(connection=connection))
