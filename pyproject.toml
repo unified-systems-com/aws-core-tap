@@ -23,8 +23,8 @@ dynamic = ["version"]
 # tap#1355), published 2026-11-24.
 # Our own *-tap packages stay ranges; it resolves through the boot record's git source.
 dependencies = [
-    "boto3==1.44.7",
-    "botocore==1.44.7",
+    "boto3==1.44.13",
+    "botocore==1.44.13",
     "computing-core-tap>=0.11.0,<0.12",
 ]
 
