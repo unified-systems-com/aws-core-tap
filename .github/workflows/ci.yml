@@ -28,7 +28,7 @@ jobs:
     # af6c940e is tap v0.5.0, this plugin's requires_tap floor (0067_history_event_time depends on its tap_grid
     # 0024): its plugin-ci runs `makemigrations --check` over the plugin's app labels, so a model change without its
     # migration fails here (unified-systems-com/tap#1284). Renovate does not track this pin: move it on purpose.
-    uses: unified-systems-com/tap/.github/workflows/plugin-ci.yml@af6c940e52bc68b50add3b9ff63e600da8265e58
+    uses: unified-systems-com/tap/.github/workflows/plugin-ci.yml@e4d2e5c144d629ba2a07bff0a2dde390ed132a01
     with:
       plugin_slug: aws_core
       # The test database is built by applying every migration, and each generated type adds a live and
